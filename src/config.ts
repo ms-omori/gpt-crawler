@@ -1,6 +1,6 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import type { Page } from "playwright";
+import type { Page } from 'playwright';
 
 const Page: z.ZodType<Page> = z.any();
 
@@ -11,7 +11,7 @@ export const configSchema = z.object({
    * @example "https://www.builder.io/sitemap.xml"
    * @default ""
    */
-  url: z.string(),
+  url: z.string().or(z.array(z.string())),
   /**
    * Pattern to match against for links on a page to subsequently crawl
    * @example "https://www.builder.io/c/docs/**"
@@ -20,11 +20,19 @@ export const configSchema = z.object({
   match: z.string().or(z.array(z.string())),
 
   /**
-   * Selector to grab the inner text from
+   * Selector for wait page to load
    * @example ".docs-builder-container"
    * @default ""
    */
   selector: z.string().optional(),
+
+  /**
+   * Selector to grab the inner text from
+   * @example ".docs-builder-container"
+   * @default ""
+   */
+  textSelector: z.string().optional(),
+
   /**
    * Don't crawl more than this many pages
    * @default 50
@@ -49,7 +57,7 @@ export const configSchema = z.object({
       z.object({
         page: Page,
         pushData: z.function().args(z.any()).returns(z.promise(z.void())),
-      }),
+      })
     )
     .returns(z.promise(z.void()))
     .optional(),
