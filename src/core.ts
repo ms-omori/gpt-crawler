@@ -45,6 +45,7 @@ export async function waitForXPath(page: Page, xpath: string, timeout: number) {
     { timeout }
   );
 }
+const visited = new Set<string>();
 
 export async function crawl(config: Config) {
   configSchema.parse(config);
@@ -74,6 +75,11 @@ export async function crawl(config: Config) {
     requestQueue,
     // Use the requestHandler to process each of the crawled pages.
     async requestHandler({ request, page, enqueueLinks, log, pushData }) {
+      if (request.loadedUrl) {
+        if (visited.has(request.loadedUrl ?? '')) return;
+        visited.add(request.loadedUrl ?? '');
+      }
+
       if (config.cookie) {
         // Set the cookie for the specific URL
         const cookie = {
@@ -112,20 +118,21 @@ export async function crawl(config: Config) {
       if (!!html) {
         if (config.textSelector) {
           const textSelected = await getPageHtml(page, config.textSelector);
-          if (!!textSelected) {
+          if (!!textSelected && !textSelected.includes('<!doctype html>')) {
             await pushData({
-              title,
+              title: title.replace(' – makeshop よくある質問', ''),
               url: decodeURIComponent(request.loadedUrl ?? ''),
               html: textSelected.replace(/\\n+/g, '\\n'),
             });
           }
         } else {
           await pushData({
-            title,
+            title: title.replace(' – makeshop よくある質問', ''),
             url: decodeURIComponent(request.loadedUrl ?? ''),
             html: html.replace(/\\n+/g, '\\n'),
           });
         }
+        // Save results as JSON to ./storage/datasets/default
       }
 
       if (config.onVisitPage) {
